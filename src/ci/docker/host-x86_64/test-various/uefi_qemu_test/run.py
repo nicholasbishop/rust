@@ -20,7 +20,7 @@ def run(*cmd, capture=False, check=True, env=None):
                           text=True)
 
 
-def build_and_run(tmp_dir):
+def build_and_run(tmp_dir, target):
     host_artifacts = Path('/checkout/obj/build/x86_64-unknown-linux-gnu')
     stage0 = host_artifacts / 'stage0/bin'
     stage2 = host_artifacts / 'stage2/bin'
@@ -33,7 +33,6 @@ def build_and_run(tmp_dir):
     shutil.copytree('/uefi_qemu_test', test_crate)
 
     # Build the UEFI executable.
-    target = 'x86_64-unknown-uefi'
     run('cargo',
         'build',
         '--manifest-path',
@@ -86,10 +85,13 @@ def build_and_run(tmp_dir):
 
 
 def main():
-    # Create a temporary directory so that we have a writeable
-    # workspace.
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        build_and_run(tmp_dir)
+    targets = ['i686-unknown-uefi', 'x86_64-unknown-uefi']
+
+    for target in targets:
+        # Create a temporary directory so that we have a writeable
+        # workspace.
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            build_and_run(tmp_dir, target)
 
 
 if __name__ == "__main__":
