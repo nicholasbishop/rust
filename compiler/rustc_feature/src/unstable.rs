@@ -582,6 +582,8 @@ declare_features! (
     (unstable, type_changing_struct_update, "1.58.0", Some(86555), None),
     /// Allows using type privacy lints (`private_interfaces`, `private_bounds`, `unnameable_types`).
     (unstable, type_privacy_lints, "1.72.0", Some(48054), None),
+    /// Allows using `std` with the UEFI targets.
+    (unstable, uefi_std, "CURRENT_RUSTC_VERSION", Some(100499), None),
     /// Enables rustc to generate code that instructs libstd to NOT ignore SIGPIPE.
     (unstable, unix_sigpipe, "1.65.0", Some(97889), None),
     /// Allows unnamed fields of struct and union type

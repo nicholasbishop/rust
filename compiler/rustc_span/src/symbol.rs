@@ -1671,6 +1671,7 @@ symbols! {
         u32,
         u64,
         u8,
+        uefi_std,
         unaligned_volatile_load,
         unaligned_volatile_store,
         unboxed_closures,
