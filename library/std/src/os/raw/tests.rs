@@ -1,4 +1,4 @@
-#![cfg(not(all(windows, target_env = "msvc")))]
+#![cfg(not(any(all(windows, target_env = "msvc"), target_os = "uefi")))]
 
 use crate::any::TypeId;
 

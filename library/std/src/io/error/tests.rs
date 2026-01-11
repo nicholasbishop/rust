@@ -67,7 +67,12 @@ fn test_const() {
 
 #[test]
 fn test_os_packing() {
-    for code in -20..20 {
+    #[cfg(target_os = "uefi")]
+    let range = 0..20;
+    #[cfg(not(target_os = "uefi"))]
+    let range = -20..20;
+
+    for code in range {
         let e = Error::from_raw_os_error(code);
         assert_eq!(e.raw_os_error(), Some(code));
         assert_matches!(

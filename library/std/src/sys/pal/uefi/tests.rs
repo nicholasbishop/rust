@@ -1,7 +1,7 @@
 //! These tests are not run automatically right now. Please run these tests manually by copying them
 //! to a separate project when modifying any related code.
 
-use super::time::system_time_internal::{from_uefi, to_uefi};
+use super::system_time::{from_uefi, to_uefi};
 use crate::io::{IoSlice, IoSliceMut};
 use crate::ops::{Deref, DerefMut};
 use crate::time::Duration;

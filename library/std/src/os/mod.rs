@@ -81,7 +81,7 @@ pub mod darwin;
         all(target_vendor = "fortanix", target_env = "sgx")
     )
 )))]
-#[cfg(all(not(target_os = "hermit"), any(unix, doc)))]
+#[cfg(all(not(target_os = "hermit"), not(target_os = "uefi"), any(unix, doc)))]
 pub mod unix;
 
 // linux
@@ -89,7 +89,8 @@ pub mod unix;
     doc,
     any(
         all(target_arch = "wasm32", not(target_os = "wasi")),
-        all(target_vendor = "fortanix", target_env = "sgx")
+        all(target_vendor = "fortanix", target_env = "sgx"),
+        target_os = "uefi"
     )
 )))]
 #[cfg(any(target_os = "linux", doc))]
@@ -114,7 +115,8 @@ pub mod wasip2;
     doc,
     any(
         all(target_arch = "wasm32", not(target_os = "wasi")),
-        all(target_vendor = "fortanix", target_env = "sgx")
+        all(target_vendor = "fortanix", target_env = "sgx"),
+        target_os = "uefi"
     )
 )))]
 #[cfg(any(windows, doc))]

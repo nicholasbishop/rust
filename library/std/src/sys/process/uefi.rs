@@ -391,7 +391,7 @@ mod uefi_command_internal {
 
     impl Image {
         pub fn load_image(p: &OsStr) -> io::Result<Self> {
-            let path = helpers::OwnedDevicePath::from_text(p)?;
+            let path = helpers::OwnedDevicePath::from_path(p.as_ref())?;
             let boot_services: NonNull<r_efi::efi::BootServices> = boot_services()
                 .ok_or_else(|| const_error!(io::ErrorKind::NotFound, "Boot Services not found"))?
                 .cast();

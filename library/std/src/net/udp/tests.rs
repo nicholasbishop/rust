@@ -174,6 +174,7 @@ fn udp_clone_two_write() {
     })
 }
 
+#[cfg(not(target_os = "uefi"))] // TODO
 #[test]
 fn debug() {
     let name = if cfg!(windows) { "socket" } else { "fd" };

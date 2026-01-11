@@ -223,7 +223,10 @@ fn handle_run(socket: TcpStream, work: &Path, tmp: &Path, lock: &Mutex<()>, conf
             let val = &arg[key_len + 1..][..val_len];
             let key = t!(str::from_utf8(key)).to_string();
             let val = t!(str::from_utf8(val)).to_string();
-            env.push((key, val));
+            // TODO: explain why
+            if !(cfg!(target_os = "uefi") && val.is_empty()) {
+                env.push((key, val));
+            }
         }
         arg.truncate(0);
     }

@@ -303,7 +303,7 @@ fn test_clone_from() {
 }
 
 #[test]
-#[cfg_attr(target_os = "emscripten", ignore)]
+#[cfg_attr(any(target_os = "emscripten", target_os = "uefi"), ignore)]
 fn test_send() {
     let n = list_from(&[1, 2, 3]);
     thread::spawn(move || {

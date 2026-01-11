@@ -302,6 +302,26 @@ impl OwnedDevicePath {
         ))
     }
 
+    /// Create an `OwnedDevicePath` from a `Path`.
+    ///
+    /// This uses the UEFI Shell Protocol's `get_device_path_from_file_path` function.
+    pub(crate) fn from_path(path: &Path) -> io::Result<OwnedDevicePath> {
+        let shell = open_shell()
+            .ok_or(io::const_error!(io::ErrorKind::NotFound, "UEFI Shell not found"))?;
+        let mut path = os_string_to_raw(path.as_os_str()).ok_or(io::const_error!(
+            io::ErrorKind::InvalidFilename,
+            "invalid UEFI shell mapping"
+        ))?;
+
+        // SAFETY: `path` is a valid null-terminated char16 string.
+        let dp = unsafe { ((*shell.as_ptr()).get_device_path_from_file_path)(path.as_mut_ptr()) };
+        let dp = NonNull::new(dp).ok_or(io::const_error!(
+            io::ErrorKind::NotFound,
+            "failed to get device path from file path"
+        ))?;
+        Ok(OwnedDevicePath(dp))
+    }
+
     pub(crate) const fn as_ptr(&self) -> *mut r_efi::protocols::device_path::Protocol {
         self.0.as_ptr()
     }

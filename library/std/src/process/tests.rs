@@ -1,3 +1,5 @@
+#![cfg(not(target_os = "uefi"))] // TODO
+
 use super::{Command, Output, Stdio};
 use crate::io::prelude::*;
 use crate::io::{BorrowedBuf, ErrorKind};

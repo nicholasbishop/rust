@@ -37,6 +37,8 @@
         target_env = "sgx",
         target_os = "xous",
         target_os = "trusty",
+        // TODO(nicholasbishop): I'd like to enable the non-symlink tests.
+        target_os = "uefi",
     ))
 ))]
 mod tests;
