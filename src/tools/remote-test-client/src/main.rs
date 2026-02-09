@@ -7,7 +7,7 @@
 
 use std::fs::{self, File};
 use std::io::prelude::*;
-use std::io::{self, BufWriter};
+use std::io::{self, BufWriter, Cursor};
 use std::net::TcpStream;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -135,6 +135,7 @@ fn prepare_rootfs(target: &str, rootfs: &Path, server: &Path, rootfs_img: &Path)
             prepare_rootfs_cpio(rootfs, rootfs_img)
         }
         "riscv64gc-unknown-linux-gnu" => prepare_rootfs_ext4(rootfs, rootfs_img),
+        "x86_64-unknown-uefi" => {}
         _ => panic!("{} is not supported", target),
     }
 }
@@ -184,6 +185,47 @@ fn prepare_rootfs_ext4(rootfs: &Path, rootfs_img: &Path) {
     mkfs.arg("-d").arg(rootfs).arg(rootfs_img);
     let mut mkfs_child = t!(mkfs.spawn());
     assert!(t!(mkfs_child.wait()).success());
+}
+
+fn prepare_esp(esp: &Path, server: &Path, prebuilt: &ovmf_prebuilt::Prebuilt) {
+    use fatfs::{FileSystem, FormatVolumeOptions, FsOptions};
+    use ovmf_prebuilt::{Arch, FileType};
+
+    // 16 MiB.
+    let mut data = vec![0; 1024 * 1024 * 16];
+
+    {
+        let cursor = Cursor::new(&mut data);
+        t!(fatfs::format_volume(
+            cursor,
+            FormatVolumeOptions::new().volume_label(*b"test-esp\0\0\0"),
+        ));
+    }
+
+    {
+        let cursor = Cursor::new(&mut data);
+        let fs = t!(FileSystem::new(cursor, FsOptions::new()));
+
+        let root_dir = fs.root_dir();
+        let efi = t!(root_dir.create_dir("efi"));
+        let boot = t!(efi.create_dir("boot"));
+
+        // let mut file = t!(boot.create_file("bootx64.efi"));
+        // t!(file
+        //    .write_all(&t!(fs::read("target/x86_64-unknown-uefi/debug/uefi_shell_launcher.efi",))));
+
+        // TODO: not sure if we want to stick with startup.nsh.
+        let mut file = t!(boot.create_file("startup.nsh"));
+        t!(file.write_all(b"remote-test-server.efi --batch --sequential"));
+
+        let mut file = t!(boot.create_file("bootx64.efi"));
+        t!(file.write_all(&t!(fs::read(prebuilt.get_file(Arch::X64, FileType::Shell),))));
+
+        let mut file = t!(boot.create_file("remote-test-server.efi"));
+        t!(file.write_all(&t!(fs::read(server))));
+    }
+
+    t!(fs::write(esp, data));
 }
 
 fn start_qemu_emulator(target: &str, rootfs: &Path, server: &Path, tmpdir: &Path) {
@@ -255,6 +297,42 @@ fn start_qemu_emulator(target: &str, rootfs: &Path, server: &Path, tmpdir: &Path
                 .arg("virtio-blk-device,drive=hd0")
                 .arg("-drive")
                 .arg(&format!("file={},format=raw,id=hd0", &rootfs_img.to_string_lossy()));
+            t!(cmd.spawn());
+        }
+        "x86_64-unknown-uefi" => {
+            use ovmf_prebuilt::{Arch, FileType, Prebuilt, Source};
+
+            let prebuilt = t!(Prebuilt::fetch(Source::EDK2_STABLE202511_R1, tmpdir.join("ovmf"),));
+
+            let esp = tmpdir.join("esp.fat.bin");
+            prepare_esp(&esp, server, &prebuilt);
+
+            // Make a writeable copy of the OVMF vars.
+            let vars_src = prebuilt.get_file(Arch::X64, FileType::Vars);
+            let vars_dst = tmpdir.join("vars.fd");
+            t!(fs::copy(vars_src, &vars_dst));
+
+            let pflash_code = format!(
+                "if=pflash,format=raw,readonly=on,file={}",
+                prebuilt.get_file(Arch::X64, FileType::Code).to_string_lossy(),
+            );
+            let pflash_vars =
+                format!("if=pflash,format=raw,readonly=off,file={}", vars_dst.to_string_lossy());
+            let esp = format!("format=raw,file={}", esp.to_string_lossy());
+
+            let mut cmd = Command::new("qemu-system-x86_64");
+            cmd
+                // TODO: go through all of these. Prob remove some.
+                .arg("-enable-kvm")
+                .args(["-serial", "stdio"])
+                // TODO: why is this needed?
+                .args(["-device", "virtio-rng-pci"])
+                .args(["-machine", "q35"])
+                .args(["-m", "256M"])
+                .args(["-nic", "user,hostfwd=tcp::12345-:12345"])
+                .args(["-drive", &pflash_code])
+                .args(["-drive", &pflash_vars])
+                .args(["-drive", &esp]);
             t!(cmd.spawn());
         }
         _ => panic!("cannot start emulator for: {}", target),

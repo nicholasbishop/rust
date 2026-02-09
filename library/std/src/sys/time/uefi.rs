@@ -52,7 +52,9 @@ impl Instant {
             return x;
         }
 
-        panic!("time not implemented on this platform")
+        // TODO
+        // panic!("time not implemented on this platform")
+        Instant(Duration::from_secs(0))
     }
 
     pub fn checked_sub_instant(&self, other: &Instant) -> Option<Duration> {

@@ -4187,6 +4187,11 @@ impl Step for RemoteTestClientTests {
         let bootstrap_host = builder.config.host_target;
         let compiler = builder.compiler(0, bootstrap_host);
 
+        // TODO
+        // let extra_features = if target.os() == "uefi" {
+        //     ["uefi"]
+        // } else {[]};
+
         let cargo = tool::prepare_tool_cargo(
             builder,
             compiler,
